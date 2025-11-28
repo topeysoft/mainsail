@@ -4,5 +4,18 @@
     "hostname": null,
     "port": null,
     "instancesDB": "browser",
-    "instances": []
+    "instances": [
+        {
+            "hostname": "obi1.local",
+            "port": 7125
+        },
+        {
+            "hostname": "r2d2.local",
+            "port": 7125
+        },
+        {
+            "hostname": "c3po.local",
+            "port": 7125
+        }
+    ]
 }

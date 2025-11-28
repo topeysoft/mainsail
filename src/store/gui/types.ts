@@ -132,6 +132,11 @@ export interface GuiState {
         hideOtherInstances: boolean
     }
     view: {
+        ace: {
+            showEndlessSpool: boolean
+            showGateWeights: boolean
+            retractLength: number
+        }
         afc: {
             hiddenExtruders: string[]
             hiddenUnits: string[]

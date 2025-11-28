@@ -75,6 +75,7 @@ export const getDefaultState = (): GuiState => {
                 { name: 'macros', visible: true },
                 { name: 'machine-settings', visible: true },
                 { name: 'miscellaneous', visible: true },
+                { name: 'ace', visible: true },
                 { name: 'temperature', visible: true },
                 { name: 'miniconsole', visible: false },
             ],
@@ -85,6 +86,7 @@ export const getDefaultState = (): GuiState => {
                 { name: 'macros', visible: true },
                 { name: 'machine-settings', visible: true },
                 { name: 'miscellaneous', visible: true },
+                { name: 'ace', visible: true },
             ],
             tabletLayout2: [
                 { name: 'temperature', visible: true },
@@ -97,6 +99,7 @@ export const getDefaultState = (): GuiState => {
                 { name: 'macros', visible: true },
                 { name: 'machine-settings', visible: true },
                 { name: 'miscellaneous', visible: true },
+                { name: 'ace', visible: true },
             ],
             desktopLayout2: [
                 { name: 'temperature', visible: true },
@@ -107,6 +110,7 @@ export const getDefaultState = (): GuiState => {
                 { name: 'extruder-control', visible: true },
                 { name: 'macros', visible: true },
                 { name: 'miscellaneous', visible: true },
+                { name: 'ace', visible: true },
             ],
             widescreenLayout2: [
                 { name: 'temperature', visible: true },
@@ -190,6 +194,11 @@ export const getDefaultState = (): GuiState => {
             hideOtherInstances: false,
         },
         view: {
+            ace: {
+                showEndlessSpool: true,
+                showGateWeights: true,
+                retractLength: 600,
+            },
             afc: {
                 hiddenExtruders: [],
                 hiddenUnits: [],
