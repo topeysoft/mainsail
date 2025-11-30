@@ -109,10 +109,14 @@ export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
 
     checkFirstTimeSetup() {
         const isFirstTime = this.$store.getters['ace/setup/isFirstTimeSetup']
-        const hasDevices = this.aceNumDevices > 0
+        const hasNoDevices = this.aceNumDevices === 0
+        const aceExists = this.aceExists
 
-        // Auto-open wizard on first time if devices are detected
-        if (isFirstTime && hasDevices) {
+        // Auto-open wizard ONLY if:
+        // 1. ACE module is detected
+        // 2. No devices configured yet (needs setup)
+        // 3. First time (wizard never completed)
+        if (aceExists && hasNoDevices && isFirstTime) {
             // Small delay to let panel render first
             setTimeout(() => {
                 this.$store.dispatch('ace/setup/openWizard')

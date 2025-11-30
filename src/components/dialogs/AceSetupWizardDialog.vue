@@ -364,10 +364,8 @@ export default class AceSetupWizardDialog extends Mixins(BaseMixin, AceMixin) {
         // Load current ACE state when wizard opens
         await this.$store.dispatch('ace/setup/loadFromAceState')
 
-        // Auto-scan devices on first step
-        if (this.currentStep === 0) {
-            await this.scanDevices()
-        }
+        // Note: Removed auto-scan on mount to prevent console spam
+        // Users can manually click "Rescan" button if needed
     }
 
     async scanDevices() {
