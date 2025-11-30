@@ -15,6 +15,19 @@
                     </v-btn>
                 </v-toolbar>
                 <v-card-text class="pt-4">
+                    <!-- Setup Wizard Button -->
+                    <v-btn
+                        block
+                        outlined
+                        color="primary"
+                        class="mb-4"
+                        @click="openSetupWizard">
+                        <v-icon left>{{ mdiWizardHat }}</v-icon>
+                        {{ $t('Panels.AcePanel.SetupWizard.Title') }}
+                    </v-btn>
+
+                    <v-divider class="mb-4" />
+
                     <v-switch
                         v-model="showEndlessSpool"
                         :label="$t('Panels.AcePanel.ShowEndlessSpool')"
@@ -44,12 +57,13 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
-import { mdiCog, mdiClose } from '@mdi/js'
+import { mdiCog, mdiClose, mdiWizardHat } from '@mdi/js'
 
 @Component
 export default class AcePanelSettings extends Mixins(BaseMixin) {
     mdiCog = mdiCog
     mdiClose = mdiClose
+    mdiWizardHat = mdiWizardHat
 
     showDialog = false
 
@@ -84,6 +98,11 @@ export default class AcePanelSettings extends Mixins(BaseMixin) {
             name: 'view.ace.retractLength',
             value,
         })
+    }
+
+    openSetupWizard() {
+        this.showDialog = false
+        this.$store.dispatch('ace/setup/openWizard')
     }
 }
 </script>

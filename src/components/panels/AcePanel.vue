@@ -73,6 +73,9 @@
                 </v-row>
             </div>
         </v-card-text>
+
+        <!-- Setup Wizard Dialog -->
+        <ace-setup-wizard-dialog />
     </panel>
 </template>
 
@@ -86,6 +89,7 @@ import { mdiPrinter3dNozzle } from '@mdi/js'
     components: {
         AcePanelDeviceList: () => import('./Ace/AcePanelDeviceList.vue'),
         AcePanelDeviceGateGroup: () => import('./Ace/AcePanelDeviceGateGroup.vue'),
+        AceSetupWizardDialog: () => import('@/components/dialogs/AceSetupWizardDialog.vue'),
     },
 })
 export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
@@ -98,6 +102,22 @@ export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
         this.aceDevices.forEach((device: any) => {
             this.$set(this.deviceExpanded, device.device_id, true)
         })
+
+        // Check if first time setup and open wizard
+        this.checkFirstTimeSetup()
+    }
+
+    checkFirstTimeSetup() {
+        const isFirstTime = this.$store.getters['ace/setup/isFirstTimeSetup']
+        const hasDevices = this.aceNumDevices > 0
+
+        // Auto-open wizard on first time if devices are detected
+        if (isFirstTime && hasDevices) {
+            // Small delay to let panel render first
+            setTimeout(() => {
+                this.$store.dispatch('ace/setup/openWizard')
+            }, 1000)
+        }
     }
 
     expandAll() {
