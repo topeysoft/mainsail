@@ -9,8 +9,8 @@
             <ace-panel-settings />
         </template>
         <v-card-text class="pt-1">
-            <!-- Tabs for device support (always shown when devices exist) -->
-            <v-tabs v-if="aceNumDevices >= 1" v-model="activeTab" class="mb-3">
+            <!-- Tabs - always shown when ACE panel is visible -->
+            <v-tabs v-model="activeTab" class="mb-3">
                 <v-tab>{{ $t('Panels.AcePanel.Gates') }}</v-tab>
                 <v-tab>
                     {{ $t('Panels.AcePanel.Devices') }}
@@ -18,14 +18,14 @@
                 </v-tab>
             </v-tabs>
 
-            <!-- Tab content -->
-            <v-tabs-items v-if="aceNumDevices >= 1" v-model="activeTab">
+            <!-- Tab content - always available -->
+            <v-tabs-items v-model="activeTab">
                 <!-- Gates Tab -->
                 <v-tab-item>
                     <ace-panel-status />
 
-                    <!-- Multi-device: Show gates grouped by device -->
-                    <div class="mt-3">
+                    <!-- Gates view -->
+                    <div v-if="aceNumDevices >= 1" class="mt-3">
                         <v-row align="center" class="mb-2">
                             <v-col>
                                 <span class="text-caption text--secondary">
@@ -49,6 +49,21 @@
                             :default-expanded="deviceExpanded[device.device_id]"
                             :ref="`device-${device.device_id}`" />
                     </div>
+
+                    <!-- No devices empty state -->
+                    <v-card v-else outlined class="empty-state mt-3">
+                        <v-card-text class="text-center py-8">
+                            <v-icon size="64" color="grey lighten-1">{{ mdiAlertCircleOutline }}</v-icon>
+                            <p class="text-h6 mt-4 mb-2">{{ $t('Panels.AcePanel.NoDevicesFound') }}</p>
+                            <p class="text-body-2 text--secondary mb-4">
+                                {{ $t('Panels.AcePanel.NoDevicesFoundDescription') }}
+                            </p>
+                            <v-btn color="primary" @click="activeTab = 1">
+                                <v-icon left>{{ mdiViewDashboard }}</v-icon>
+                                {{ $t('Panels.AcePanel.GoToDevicesTab') }}
+                            </v-btn>
+                        </v-card-text>
+                    </v-card>
                 </v-tab-item>
 
                 <!-- Devices Tab -->
@@ -56,22 +71,6 @@
                     <ace-panel-device-list />
                 </v-tab-item>
             </v-tabs-items>
-
-            <!-- Single device view (no tabs) -->
-            <div v-else>
-                <ace-panel-status />
-                <v-row class="mt-2">
-                    <v-col
-                        v-for="gate in aceGates"
-                        :key="gate.index"
-                        cols="6"
-                        sm="6"
-                        md="3"
-                        class="pa-2">
-                        <ace-panel-gate :gate="gate" />
-                    </v-col>
-                </v-row>
-            </div>
         </v-card-text>
 
         <!-- Setup Wizard Dialog -->
@@ -83,7 +82,7 @@
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AceMixin from '@/components/mixins/ace'
-import { mdiPrinter3dNozzle } from '@mdi/js'
+import { mdiPrinter3dNozzle, mdiAlertCircleOutline, mdiViewDashboard } from '@mdi/js'
 
 @Component({
     components: {
@@ -94,6 +93,8 @@ import { mdiPrinter3dNozzle } from '@mdi/js'
 })
 export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
     mdiPrinter3dNozzle = mdiPrinter3dNozzle
+    mdiAlertCircleOutline = mdiAlertCircleOutline
+    mdiViewDashboard = mdiViewDashboard
     activeTab = 0
     deviceExpanded: Record<string, boolean> = {}
 
@@ -149,5 +150,9 @@ export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
 <style scoped>
 .ace-control-panel {
     overflow: visible;
+}
+
+.empty-state {
+    border: 2px dashed rgba(128, 128, 128, 0.3) !important;
 }
 </style>

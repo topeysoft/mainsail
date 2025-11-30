@@ -355,8 +355,11 @@ export default class AceMixin extends Vue {
     }
 
     // Scan for ACE devices
-    aceScanDevices() {
-        this.doSendAce('ACE_SCAN_DEVICES')
+    aceScanDevices(apply: boolean = false, verbose: boolean = false) {
+        let cmd = 'ACE_SCAN_DEVICES'
+        if (apply) cmd += ' APPLY=1'
+        if (verbose) cmd += ' VERBOSE=1'
+        this.doSendAce(cmd)
     }
 
     // List ACE devices

@@ -6,24 +6,21 @@
         <!-- Spool Visual with Filament Level Indicator -->
         <v-tooltip top>
             <template #activator="{ on, attrs }">
-                <div
-                    class="filament-spool-wrapper cursor-pointer mb-1 position-relative"
-                    v-bind="attrs"
-                    v-on="on">
+                <div class="filament-spool-wrapper cursor-pointer mb-1 position-relative" v-bind="attrs" v-on="on">
                     <!-- Outer Glow Effect -->
                     <div v-if="isActive || isHovered" class="spool-glow" :style="{ backgroundColor: iconColor }" />
 
                     <!-- Main Spool SVG with Thick Ring -->
                     <div class="filament-spool" :class="{ 'spool-spinning': isLoading }">
-                        <svg width="90" height="90" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <!-- Circular mask for filament level -->
                                 <mask :id="`level-mask-${gate.index}`">
-                                    <rect x="0" y="0" width="100" height="100" fill="black" />
+                                    <rect x="0" y="0" width="110" height="110" fill="black" />
                                     <rect
                                         x="0"
-                                        :y="100 - filamentLevel"
-                                        width="100"
+                                        :y="110 - filamentLevel"
+                                        width="110"
                                         :height="filamentLevel"
                                         fill="white" />
                                 </mask>
@@ -55,9 +52,20 @@
                             </defs>
 
                             <!-- Background Ring (empty state) -->
+                            <!-- Outer contrast stroke -->
                             <circle
-                                cx="50"
-                                cy="50"
+                                cx="55"
+                                cy="55"
+                                r="36"
+                                fill="none"
+                                :stroke="contrastColor"
+                                stroke-width="18"
+                                opacity="0.3"
+                                class="ring-background-outline" />
+                            <!-- Inner colored ring -->
+                            <circle
+                                cx="55"
+                                cy="55"
                                 r="36"
                                 fill="none"
                                 :stroke="iconColor"
@@ -66,10 +74,23 @@
                                 class="ring-background" />
 
                             <!-- Filled Ring (shows filament level) -->
+                            <!-- Outer contrast stroke -->
                             <circle
                                 v-if="!isLoading"
-                                cx="50"
-                                cy="50"
+                                cx="55"
+                                cy="55"
+                                r="36"
+                                fill="none"
+                                :stroke="contrastColor"
+                                stroke-width="18"
+                                opacity="0.5"
+                                class="ring-filled-outline"
+                                :mask="`url(#level-mask-${gate.index})`" />
+                            <!-- Inner colored ring -->
+                            <circle
+                                v-if="!isLoading"
+                                cx="55"
+                                cy="55"
                                 r="36"
                                 fill="none"
                                 :stroke="iconColor"
@@ -79,10 +100,22 @@
                                 :mask="`url(#level-mask-${gate.index})`" />
 
                             <!-- Loading Ring (animated) -->
+                            <!-- Outer contrast stroke -->
                             <circle
                                 v-if="isLoading"
-                                cx="50"
-                                cy="50"
+                                cx="55"
+                                cy="55"
+                                r="36"
+                                fill="none"
+                                :stroke="contrastColor"
+                                stroke-width="18"
+                                opacity="0.5"
+                                class="ring-loading-outline" />
+                            <!-- Inner animated ring -->
+                            <circle
+                                v-if="isLoading"
+                                cx="55"
+                                cy="55"
                                 r="36"
                                 fill="none"
                                 :stroke="`url(#${spinGradientId})`"
@@ -91,8 +124,8 @@
 
                             <!-- Gate Number in Center -->
                             <text
-                                x="50"
-                                y="50"
+                                x="55"
+                                y="55"
                                 text-anchor="middle"
                                 dominant-baseline="central"
                                 class="gate-number"
@@ -232,6 +265,11 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
         return luminance > 0.5 ? '#aaaaaa' : '#FFFFFF'
     }
 
+    get contrastColor(): string {
+        // Return contrasting outline color based on theme
+        return this.$vuetify.theme.dark ? '#FFFFFF' : '#000000'
+    }
+
     get materialDisplay(): string {
         return this.gate.material || '----'
     }
@@ -309,6 +347,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     transition: transform 0.3s ease;
     position: relative;
     z-index: 2;
+    overflow: visible;
 }
 
 .filament-spool:hover {
@@ -336,8 +375,8 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     opacity: 0.3;
     filter: blur(15px);

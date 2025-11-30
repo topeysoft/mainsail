@@ -106,8 +106,8 @@ export default class AcePanelDeviceList extends Mixins(BaseMixin, AceMixin) {
     async scanDevices() {
         this.scanning = true
         try {
-            // Send scan command
-            this.aceScanDevices()
+            // Send scan command with APPLY=1 to automatically apply discovered devices
+            this.aceScanDevices(true, false)
 
             // Show success toast
             this.$toast.success(this.$t('Panels.AcePanel.DeviceScanStarted').toString())
