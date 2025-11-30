@@ -7,8 +7,40 @@
                     <v-icon :class="{ 'rotate-icon': !expanded }">{{ mdiChevronDown }}</v-icon>
                 </v-col>
                 <v-col>
-                    <span class="text-subtitle-1 font-weight-bold ml-2">{{ device.name }}</span>
-                    <span class="text-caption text--secondary ml-2">({{ $t('Panels.AcePanel.GatesRange', { start: gateRange.start, end: gateRange.end }) }})</span>
+                    <div class="d-flex align-center">
+                        <span class="text-subtitle-1 font-weight-bold ml-2">{{ device.name }}</span>
+                        <span class="text-caption text--secondary ml-2">({{ $t('Panels.AcePanel.GatesRange', { start: gateRange.start, end: gateRange.end }) }})</span>
+
+                        <!-- Mini Gate Preview (Collapsed Only) - Inline -->
+                        <div v-if="!expanded" class="mini-gate-preview-inline d-flex align-center ml-4">
+                            <div
+                                v-for="gate in deviceGates"
+                                :key="gate.index"
+                                class="mini-gate-indicator-inline">
+                                <v-tooltip top>
+                                    <template #activator="{ on, attrs }">
+                                        <div class="mini-gate-circle-wrapper" v-bind="attrs" v-on="on">
+                                            <!-- Status dot overlay (only show for selected or empty) -->
+                                            <div
+                                                v-if="shouldShowStatusDot(gate)"
+                                                class="mini-status-dot"
+                                                :style="{ backgroundColor: getStatusColor(gate) }" />
+                                            <!-- Colored circle -->
+                                            <div
+                                                class="mini-gate-circle"
+                                                :style="{
+                                                    borderColor: getGateColor(gate),
+                                                    backgroundColor: isGateLoaded(gate) ? getGateColor(gate) + '20' : 'transparent'
+                                                }">
+                                                <span class="mini-gate-number">{{ gate.index }}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <span>T{{ gate.index }}: {{ gate.material }} ({{ getStatusText(gate) }})</span>
+                                </v-tooltip>
+                            </div>
+                        </div>
+                    </div>
                 </v-col>
                 <v-col cols="auto">
                     <v-chip x-small :color="statusColor" text-color="white" class="mr-2">
@@ -81,30 +113,18 @@ export default class AcePanelDeviceGateGroup extends Mixins(BaseMixin, AceMixin)
     }
 
     get connectionStatus(): string {
-        return this.device.connection_status?.charAt(0).toUpperCase() +
-               this.device.connection_status?.slice(1) || 'Unknown'
+        const connected = this.device.connected ?? false
+        return connected ? 'Connected' : 'Disconnected'
     }
 
     get statusColor(): string {
-        switch (this.device.connection_status) {
-            case 'connected':
-                return 'success'
-            case 'disconnected':
-                return 'error'
-            default:
-                return 'grey'
-        }
+        const connected = this.device.connected ?? false
+        return connected ? 'success' : 'error'
     }
 
     get statusIcon(): string {
-        switch (this.device.connection_status) {
-            case 'connected':
-                return this.mdiCheckCircle
-            case 'disconnected':
-                return this.mdiAlertCircle
-            default:
-                return this.mdiHelpCircle
-        }
+        const connected = this.device.connected ?? false
+        return connected ? this.mdiCheckCircle : this.mdiAlertCircle
     }
 
     get uptimeFormatted(): string {
@@ -118,6 +138,47 @@ export default class AcePanelDeviceGateGroup extends Mixins(BaseMixin, AceMixin)
             return `${hours}h ${minutes}m`
         }
         return `${minutes}m`
+    }
+
+    // Mini gate preview helpers
+    getGateColor(gate: any): string {
+        return '#' + (gate.color || '000000')
+    }
+
+    isGateLoaded(gate: any): boolean {
+        return gate.loaded === true || gate.status?.toLowerCase() === 'loaded' || gate.status?.toLowerCase() === 'active'
+    }
+
+    getStatusColor(gate: any): string {
+        const status = gate.status?.toLowerCase() || 'empty'
+
+        // Error state
+        if (status === 'error') return '#F44336' // Red
+
+        // Loading states
+        if (['feeding', 'unwinding', 'shifting', 'preload', 'loading', 'unloading'].includes(status)) {
+            return '#2196F3' // Blue
+        }
+
+        // Loaded/Active state
+        if (this.isGateLoaded(gate)) return '#4CAF50' // Green
+
+        // Empty state
+        return 'rgba(128, 128, 128, 0.5)' // Gray
+    }
+
+    getStatusText(gate: any): string {
+        const status = gate.status || 'Empty'
+        return status.charAt(0).toUpperCase() + status.slice(1)
+    }
+
+    shouldShowStatusDot(gate: any): boolean {
+        // Show status dot only for selected/loaded or empty gates (matching main gate behavior)
+        const status = gate.status?.toLowerCase() || 'empty'
+        const isSelected = gate.selected === true
+        const isEmpty = status === 'empty'
+
+        return isSelected || this.isGateLoaded(gate) || isEmpty
     }
 }
 </script>
@@ -138,5 +199,56 @@ export default class AcePanelDeviceGateGroup extends Mixins(BaseMixin, AceMixin)
 
 .v-card__title {
     user-select: none;
+}
+
+/* Mini Gate Preview Styles - Inline Layout */
+.mini-gate-preview-inline {
+    gap: 10px;
+    align-items: center;
+}
+
+.mini-gate-indicator-inline {
+    position: relative;
+}
+
+.mini-gate-circle-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.mini-gate-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.mini-gate-number {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: currentColor;
+}
+
+.mini-status-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--v-background-base);
+    z-index: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover effects */
+.mini-gate-circle-wrapper:hover .mini-gate-circle {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 </style>

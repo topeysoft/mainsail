@@ -1,7 +1,7 @@
 <template>
     <div
         class="gate-body-container d-flex flex-column align-center py-1 px-1 flex-grow-1"
-        :class="{ 'is-active': isActive, 'is-loading': isLoading }"
+        :class="{ 'is-active': isActive, 'is-loading': isLoading, 'is-empty': isEmpty }"
         @click="changeTool">
         <!-- Spool Visual with Filament Level Indicator -->
         <v-tooltip top>
@@ -9,8 +9,7 @@
                 <div
                     class="filament-spool-wrapper cursor-pointer mb-1 position-relative"
                     v-bind="attrs"
-                    v-on="on"
-                    @click.stop="$emit('edit')">
+                    v-on="on">
                     <!-- Outer Glow Effect -->
                     <div v-if="isActive || isHovered" class="spool-glow" :style="{ backgroundColor: iconColor }" />
 
@@ -87,7 +86,7 @@
                                 r="36"
                                 fill="none"
                                 :stroke="`url(#${spinGradientId})`"
-                                stroke-width="8"
+                                stroke-width="16"
                                 class="ring-loading" />
 
                             <!-- Gate Number in Center -->
@@ -129,9 +128,12 @@
                     <div v-else-if="isLoading" class="status-icon-overlay">
                         <v-progress-circular indeterminate color="#2196F3" :size="12" :width="2" />
                     </div>
+                    <div v-else-if="isEmpty && !isLoading" class="status-icon-overlay">
+                        <v-icon :size="16" color="grey">{{ mdiMinusCircle }}</v-icon>
+                    </div>
                 </div>
             </template>
-            <span>{{ $t('Panels.AcePanel.ClickToEdit') }}</span>
+            <span>{{ spoolTooltipText }}</span>
         </v-tooltip>
 
         <!-- Material Info -->
@@ -141,7 +143,7 @@
                     <span class="text-caption font-weight-bold d-block">{{ materialDisplay }}</span>
                 </div>
             </template>
-            <span>{{ $t('Panels.AcePanel.ClickToActivateTool', { tool: gate.index }) }}</span>
+            <span>{{ materialTooltipText }}</span>
         </v-tooltip>
     </div>
 </template>
@@ -149,9 +151,11 @@
 <script lang="ts">
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import AceMixin, { AceGate } from '@/components/mixins/ace'
+import { mdiMinusCircle } from '@mdi/js'
 
 @Component
 export default class AcePanelGateBody extends Mixins(AceMixin) {
+    mdiMinusCircle = mdiMinusCircle
     @Prop({ type: Object, required: true }) readonly gate!: AceGate
 
     isHovered = false
@@ -207,7 +211,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     }
 
     changeTool() {
-        if (!this.isLoading) {
+        if (!this.isLoading && !this.isEmpty) {
             this.aceChangeTool(this.gate.index)
         }
     }
@@ -229,7 +233,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     }
 
     get materialDisplay(): string {
-        return this.gate.material || 'PLA'
+        return this.gate.material || '----'
     }
 
     get maskId(): string {
@@ -243,6 +247,20 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     get spinGradientId(): string {
         return `spin-gradient-${this.gate.index}`
     }
+
+    get spoolTooltipText(): string {
+        if (this.isEmpty) {
+            return this.$t('Panels.AcePanel.GateEmptyLoadFilament').toString()
+        }
+        return this.$t('Panels.AcePanel.ClickToActivateTool', { tool: this.gate.index }).toString()
+    }
+
+    get materialTooltipText(): string {
+        if (this.isEmpty) {
+            return this.$t('Panels.AcePanel.GateEmptyLoadFilament').toString()
+        }
+        return this.$t('Panels.AcePanel.ClickToActivateTool', { tool: this.gate.index }).toString()
+    }
 }
 </script>
 
@@ -252,6 +270,11 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     position: relative;
     transition: all 0.3s ease;
     cursor: pointer;
+}
+
+.gate-body-container.is-empty {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .gate-body-container.is-active {
@@ -267,6 +290,14 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
 .filament-spool-wrapper {
     position: relative;
     display: inline-block;
+}
+
+.is-empty .filament-spool-wrapper {
+    cursor: not-allowed;
+}
+
+.is-empty .material-info {
+    cursor: not-allowed;
 }
 
 /* Gate Number - Enhanced Contrast */
@@ -287,13 +318,14 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
 /* Spinning Animation for Loading State */
 .spool-spinning {
     animation: spin 2s linear infinite;
+    transform-origin: center center;
 }
 
 @keyframes spin {
-    0% {
+    from {
         transform: rotate(0deg);
     }
-    100% {
+    to {
         transform: rotate(360deg);
     }
 }

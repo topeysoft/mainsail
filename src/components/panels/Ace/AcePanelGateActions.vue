@@ -1,36 +1,19 @@
 <template>
     <div class="px-1 pb-1">
         <v-item-group class="_btn-group d-flex flex-nowrap w-100">
-            <!-- Load Button - always available to switch tools -->
+            <!-- Edit Button - opens gate metadata dialog -->
             <v-tooltip top>
                 <template #activator="{ on, attrs }">
                     <v-btn
-                        :disabled="!aceCanSendCommands || (gate.loaded && gate.selected)"
                         x-small
                         class="flex-grow-1 px-0"
                         v-bind="attrs"
                         v-on="on"
-                        @click="loadGate">
-                        <v-icon x-small>{{ mdiArrowDownBold }}</v-icon>
+                        @click="editGate">
+                        <v-icon x-small>{{ mdiPencil }}</v-icon>
                     </v-btn>
                 </template>
-                <span>{{ $t('Panels.AcePanel.LoadFilament') }}</span>
-            </v-tooltip>
-
-            <!-- Unload Button - only for selected gate that is loaded -->
-            <v-tooltip top>
-                <template #activator="{ on, attrs }">
-                    <v-btn
-                        :disabled="!aceCanSendCommands || !gate.loaded || !gate.selected"
-                        x-small
-                        class="flex-grow-1 px-0"
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="unloadGate">
-                        <v-icon x-small>{{ mdiArrowUpBold }}</v-icon>
-                    </v-btn>
-                </template>
-                <span>{{ $t('Panels.AcePanel.UnloadFilament') }}</span>
+                <span>{{ $t('Panels.AcePanel.EditGate') }}</span>
             </v-tooltip>
 
             <!-- Feed Button - push filament forward -->
@@ -72,23 +55,18 @@
 import { Component, Mixins, Prop } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AceMixin, { AceGate } from '@/components/mixins/ace'
-import { mdiArrowDownBold, mdiArrowUpBold, mdiUndoVariant, mdiRedoVariant } from '@mdi/js'
+import { mdiPencil, mdiUndoVariant, mdiRedoVariant } from '@mdi/js'
 
 @Component
 export default class AcePanelGateActions extends Mixins(BaseMixin, AceMixin) {
-    mdiArrowUpBold = mdiArrowUpBold
-    mdiArrowDownBold = mdiArrowDownBold
+    mdiPencil = mdiPencil
     mdiUndoVariant = mdiUndoVariant
     mdiRedoVariant = mdiRedoVariant
 
     @Prop({ type: Object, required: true }) readonly gate!: AceGate
 
-    loadGate() {
-        this.aceChangeTool(this.gate.index)
-    }
-
-    unloadGate() {
-        this.aceUnload()
+    editGate() {
+        this.$emit('edit')
     }
 
     feedGate() {

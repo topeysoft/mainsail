@@ -7,11 +7,11 @@
         <div v-if="isSelected" class="selection-pulse-ring" :style="{ borderColor: borderColor }" />
 
         <!-- Gate Content -->
-        <ace-panel-gate-body :gate="gate" @edit="showEditDialog = true" />
-        <ace-panel-gate-actions :gate="gate" />
+        <ace-panel-gate-body :gate="reactiveGate" @edit="showEditDialog = true" />
+        <ace-panel-gate-actions :gate="reactiveGate" @edit="showEditDialog = true" />
 
         <!-- Edit Dialog -->
-        <ace-gate-map-dialog :show="showEditDialog" :gate="gate" @close="showEditDialog = false" />
+        <ace-gate-map-dialog :show="showEditDialog" :gate="reactiveGate" @close="showEditDialog = false" />
     </div>
 </template>
 
@@ -26,11 +26,9 @@ export default class AcePanelGate extends Mixins(BaseMixin, AceMixin) {
 
     showEditDialog = false
 
-    // Force component to react to gate prop changes
-    @Watch('gate', { deep: true, immediate: false })
-    onGateChange() {
-        // Force re-render when gate prop changes
-        this.$forceUpdate()
+    // Reactive gate data - pulls directly from store via AceMixin to ensure reactivity
+    get reactiveGate(): AceGate {
+        return this.getAceGate(this.gate.index)
     }
 
     get gateStatusClass() {
@@ -51,23 +49,23 @@ export default class AcePanelGate extends Mixins(BaseMixin, AceMixin) {
     }
 
     get isSelected(): boolean {
-        return this.gate.selected === true
+        return this.reactiveGate.selected === true
     }
 
     get isLoaded(): boolean {
-        return this.gate.loaded === true
+        return this.reactiveGate.loaded === true
     }
 
     get isEmpty(): boolean {
-        return this.gate.status?.toLowerCase() === 'empty'
+        return this.reactiveGate.status?.toLowerCase() === 'empty'
     }
 
     get hasError(): boolean {
-        return this.gate.status?.toLowerCase() === 'error'
+        return this.reactiveGate.status?.toLowerCase() === 'error'
     }
 
     get isLoading(): boolean {
-        const status = this.gate.status?.toLowerCase() ?? ''
+        const status = this.reactiveGate.status?.toLowerCase() ?? ''
         return ['feeding', 'unwinding', 'shifting', 'preload', 'loading', 'unloading'].includes(status)
     }
 
@@ -163,12 +161,13 @@ export default class AcePanelGate extends Mixins(BaseMixin, AceMixin) {
 
 /* Empty State */
 .ace-gate.gate-empty {
-    opacity: 0.7;
-    background-color: rgba(128, 128, 128, 0.03);
+    opacity: 0.5;
+    background-color: rgba(128, 128, 128, 0.1);
+    border-style: dashed;
 }
 
 .ace-gate.gate-empty:hover {
-    opacity: 0.9;
+    opacity: 0.8;
 }
 
 /* Error State */

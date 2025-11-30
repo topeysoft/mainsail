@@ -26,12 +26,8 @@
                     <span class="text-caption">{{ $t('Panels.AcePanel.Temperature') }}:</span>
                 </div>
                 <div>
-                    <span class="text-subtitle-2 font-weight-bold">
-                        {{ currentTemp }}°C
-                    </span>
-                    <span v-if="isDryerActive" class="text-caption text--secondary">
-                        / {{ targetTemp }}°C
-                    </span>
+                    <span class="text-subtitle-2 font-weight-bold">{{ currentTemp }}°C</span>
+                    <span v-if="isDryerActive" class="text-caption text--secondary">/ {{ targetTemp }}°C</span>
                 </div>
             </div>
 
@@ -54,12 +50,7 @@
                     <span class="text-caption">{{ $t('Panels.AcePanel.Remaining') }}:</span>
                     <span class="text-caption font-weight-bold">{{ remainingTimeFormatted }}</span>
                 </div>
-                <v-progress-linear
-                    :value="dryingProgress"
-                    color="success"
-                    height="6"
-                    rounded
-                    class="mt-1">
+                <v-progress-linear :value="dryingProgress" color="success" height="6" rounded class="mt-1">
                     <template #default="{ value }">
                         <span class="text-caption white--text">{{ Math.ceil(value) }}%</span>
                     </template>
@@ -96,7 +87,6 @@
                     <v-text-field
                         v-model.number="dryerTemp"
                         :label="$t('Panels.AcePanel.Temperature')"
-                        type="number"
                         :max="maxDryerTemp"
                         min="30"
                         suffix="°C"
@@ -107,7 +97,6 @@
                     <v-text-field
                         v-model.number="dryerDuration"
                         :label="$t('Panels.AcePanel.Duration')"
-                        type="number"
                         min="1"
                         max="480"
                         suffix="min"
@@ -118,12 +107,7 @@
                 </div>
 
                 <!-- Start Button -->
-                <v-btn
-                    color="primary"
-                    block
-                    small
-                    :disabled="!canSendCommands"
-                    @click="startDrying">
+                <v-btn color="primary" block small :disabled="!canSendCommands" @click="startDrying">
                     <v-icon small left>{{ mdiPlay }}</v-icon>
                     {{ $t('Panels.AcePanel.StartDrying') }}
                 </v-btn>
@@ -131,12 +115,7 @@
 
             <!-- Active Controls -->
             <div v-else class="active-controls">
-                <v-btn
-                    color="error"
-                    block
-                    small
-                    :disabled="!canSendCommands"
-                    @click="stopDrying">
+                <v-btn color="error" block small :disabled="!canSendCommands" @click="stopDrying">
                     <v-icon small left>{{ mdiStop }}</v-icon>
                     {{ $t('Panels.AcePanel.StopDrying') }}
                 </v-btn>
@@ -196,23 +175,24 @@ export default class AcePanelDeviceDryerCard extends Mixins(BaseMixin, AceMixin)
     }
 
     get isDryerActive(): boolean {
-        return this.device.status === 'drying'
+        const dryerStatus = this.device.status?.dryer_status?.status ?? 'stop'
+        return dryerStatus === 'drying'
     }
 
     get currentTemp(): number {
-        return this.device.temp ?? 0
+        return this.device.status?.temp ?? 0
     }
 
     get targetTemp(): number {
-        return this.device.target_temp ?? 0
+        return this.device.status?.dryer_status?.target_temp ?? 0
     }
 
     get totalDuration(): number {
-        return this.device.duration ?? 0
+        return this.device.status?.dryer_status?.duration ?? 0
     }
 
     get remainingTime(): number {
-        return this.device.remain_time ?? 0
+        return this.device.status?.dryer_status?.remain_time ?? 0
     }
 
     get remainingTimeFormatted(): string {

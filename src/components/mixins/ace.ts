@@ -31,7 +31,25 @@ export default class AceMixin extends Vue {
     }
 
     get aceStatus(): string {
-        return this.ace.status ?? 'disconnected'
+        // Check if any devices are connected
+        if (this.aceDevices.length === 0) {
+            return 'disconnected'
+        }
+
+        // If all devices are disconnected, status is disconnected
+        const allDisconnected = this.aceDevices.every((dev) => !dev.connected)
+        if (allDisconnected) {
+            return 'disconnected'
+        }
+
+        // Check the status of the first connected device
+        const connectedDevice = this.aceDevices.find((dev) => dev.connected)
+        if (connectedDevice && connectedDevice.status) {
+            return connectedDevice.status.status ?? 'idle'
+        }
+
+        // Default to idle if connected but no status
+        return 'idle'
     }
 
     get aceTemperature(): number {
@@ -116,42 +134,53 @@ export default class AceMixin extends Vue {
 
     // Get a specific gate object with all its properties
     getAceGate(index: number): AceGate {
-        // Check if we have device-specific data (multi-device setup)
-        const devicesDetail = this.ace.devices_detail
-        if (devicesDetail && Array.isArray(devicesDetail)) {
+        // Always use top-level arrays for user-configured metadata (material, color, temp)
+        // These are persisted configuration values
+        const material = this.aceGateMaterials[index] ?? ''
+        const color = this.aceGateColors[index] ?? 'FFFFFF'
+        const temp = this.aceGateTemps[index] ?? 230
+        const spoolId = this.aceSpoolIds[index] ?? 0
+
+        // Check if we have device-specific data for runtime status
+        const devices = this.ace.devices
+        if (devices && Array.isArray(devices)) {
             // Find which device owns this gate
-            const device = devicesDetail.find((d: any) => {
+            const device = devices.find((d: any) => {
                 const offset = d.gate_offset ?? 0
                 return index >= offset && index < offset + 4
             })
 
-            if (device) {
+            if (device && device.status) {
                 // Calculate local gate index within this device
                 const localIndex = index - (device.gate_offset ?? 0)
-                const gateState = device.active_gate?.[localIndex] ?? 'empty'
+                const slot = device.status.slots?.[localIndex]
 
-                return {
-                    index,
-                    status: gateState,
-                    color: device.gate_color?.[localIndex] ?? '000000',
-                    material: device.gate_material?.[localIndex] ?? 'PLA',
-                    temp: device.gate_temp?.[localIndex] ?? 0,
-                    spool_id: device.spool_id?.[localIndex] ?? 0,
-                    loaded: gateState === 'loaded' || gateState === 'active',
-                    selected: index === this.aceSelectedGate,
+                if (slot) {
+                    const gateState = slot.status ?? 'empty'
+
+                    return {
+                        index,
+                        status: gateState,
+                        color: color,
+                        material: material,
+                        temp: temp,
+                        spool_id: spoolId,
+                        loaded: gateState === 'loaded' || gateState === 'active',
+                        selected: index === this.aceSelectedGate,
+                    }
                 }
             }
         }
 
-        // This method is kept for backward compatibility but aceGates now builds objects directly
+        // Fallback to top-level arrays for backward compatibility
         const gateState = this.aceActiveGateStates[index] ?? 'empty'
         return {
             index,
             status: gateState,
-            color: this.aceGateColors[index] ?? '000000',
-            material: this.aceGateMaterials[index] ?? 'PLA',
-            temp: this.aceGateTemps[index] ?? 0,
-            spool_id: this.aceSpoolIds[index] ?? 0,
+            color: color,
+            material: material,
+            temp: temp,
+            spool_id: spoolId,
             loaded: gateState === 'loaded' || gateState === 'active',
             selected: index === this.aceSelectedGate,
         }
@@ -349,7 +378,7 @@ export default class AceMixin extends Vue {
 
     // Check if any device is disconnected
     get aceHasDisconnectedDevices(): boolean {
-        return this.aceDevices.some((dev) => dev.connection_status !== 'connected')
+        return this.aceDevices.some((dev) => !dev.connected)
     }
 
     // Get formatted uptime for a device

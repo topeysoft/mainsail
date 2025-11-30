@@ -9,8 +9,8 @@
             <ace-panel-settings />
         </template>
         <v-card-text class="pt-1">
-            <!-- Tabs for multi-device support -->
-            <v-tabs v-if="aceHasMultipleDevices" v-model="activeTab" class="mb-3">
+            <!-- Tabs for device support (always shown when devices exist) -->
+            <v-tabs v-if="aceNumDevices >= 1" v-model="activeTab" class="mb-3">
                 <v-tab>{{ $t('Panels.AcePanel.Gates') }}</v-tab>
                 <v-tab>
                     {{ $t('Panels.AcePanel.Devices') }}
@@ -19,7 +19,7 @@
             </v-tabs>
 
             <!-- Tab content -->
-            <v-tabs-items v-if="aceHasMultipleDevices" v-model="activeTab">
+            <v-tabs-items v-if="aceNumDevices >= 1" v-model="activeTab">
                 <!-- Gates Tab -->
                 <v-tab-item>
                     <ace-panel-status />
@@ -49,8 +49,6 @@
                             :default-expanded="deviceExpanded[device.device_id]"
                             :ref="`device-${device.device_id}`" />
                     </div>
-
-                    <ace-panel-dryer class="mt-3" />
                 </v-tab-item>
 
                 <!-- Devices Tab -->
@@ -73,7 +71,6 @@
                         <ace-panel-gate :gate="gate" />
                     </v-col>
                 </v-row>
-                <ace-panel-dryer class="mt-3" />
             </div>
         </v-card-text>
     </panel>

@@ -1,310 +1,320 @@
 <template>
-    <v-card outlined class="ace-device-card" :class="{ 'card-has-issues': hasIssues }">
-        <!-- Card Header -->
-        <v-card-title class="py-2 px-3">
-            <v-icon left :color="statusColor">{{ statusIcon }}</v-icon>
-            <span class="text-subtitle-1 font-weight-bold">{{ device.name }}</span>
-            <v-spacer />
+    <v-expansion-panels flat accordion class="ace-device-row">
+        <v-expansion-panel :class="{ 'device-has-issues': hasIssues }">
+            <!-- Collapsed Header - Minimal Info -->
+            <v-expansion-panel-header class="device-header pa-3">
+                <div class="d-flex align-center w-100">
+                    <!-- Status Indicator -->
+                    <v-icon :color="statusColor" class="mr-3">{{ mdiCircle }}</v-icon>
 
-            <!-- Health Score Badge -->
-            <v-tooltip bottom>
-                <template #activator="{ on, attrs }">
-                    <v-chip
-                        x-small
-                        :color="healthScoreColor"
-                        text-color="white"
-                        class="mr-2"
-                        v-bind="attrs"
-                        v-on="on">
-                        <v-icon x-small left>{{ mdiHeart }}</v-icon>
+                    <!-- Device Name/Alias -->
+                    <div class="device-name mr-4">
+                        <div v-if="hasAlias">
+                            <div class="text-h5 font-weight-bold">{{ device.alias }}</div>
+                            <div class="text-caption text--secondary" style="font-size: 0.65rem; margin-top: -2px;">{{ device.device_id }}</div>
+                        </div>
+                        <div v-else>
+                            <div class="text-subtitle-1 font-weight-medium text--secondary">{{ device.device_id || device.name || 'Unknown Device' }}</div>
+                            <div class="text-caption text--disabled" style="font-size: 0.7rem; margin-top: -2px;">{{ $t('Panels.AcePanel.NoFriendlyName') }}</div>
+                        </div>
+                    </div>
+
+                    <v-spacer />
+
+                    <!-- Gate Range -->
+                    <v-chip x-small outlined class="mr-3">
+                        <v-icon x-small left>{{ mdiPrinter3dNozzle }}</v-icon>
+                        T{{ device.gate_offset }} - T{{ device.gate_offset + 3 }}
+                    </v-chip>
+
+                    <!-- Connection Quality Bars -->
+                    <div class="signal-bars-inline mr-3">
+                        <div
+                            v-for="i in 5"
+                            :key="`bar-${i}`"
+                            class="signal-bar-mini"
+                            :class="{ active: i <= connectionQualityBars }"
+                            :style="{ height: `${i * 2 + 4}px` }" />
+                    </div>
+
+                    <!-- Health Score -->
+                    <v-chip x-small :color="healthScoreColor" text-color="white" class="mr-2">
                         {{ healthScore }}
                     </v-chip>
-                </template>
-                <span>{{ $t('Panels.AcePanel.DeviceHealth') }}: {{ healthScore }}/100</span>
-            </v-tooltip>
-
-            <!-- Connection Status -->
-            <v-chip x-small :color="statusColor" text-color="white">
-                <v-icon x-small left>{{ mdiSignal }}</v-icon>
-                {{ connectionQualityText }}
-            </v-chip>
-        </v-card-title>
-
-        <v-divider />
-
-        <v-card-text class="py-2 px-3">
-            <!-- Basic Info -->
-            <v-row dense class="mb-2">
-                <v-col cols="12">
-                    <div class="d-flex justify-space-between align-center">
-                        <div>
-                            <div class="text-caption text--secondary">{{ $t('Panels.AcePanel.Model') }}</div>
-                            <div class="text-body-2">{{ device.model || 'ACE Pro' }} <span class="text-caption text--secondary">v{{ device.firmware || '1.0' }}</span></div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-caption text--secondary">{{ $t('Panels.AcePanel.Gates') }}</div>
-                            <div class="text-body-2 font-weight-bold">T{{ device.gate_offset }} - T{{ device.gate_offset + 3 }}</div>
-                        </div>
-                    </div>
-                </v-col>
-            </v-row>
-
-            <!-- Connection Quality Indicator -->
-            <div class="connection-quality-section mb-3">
-                <div class="d-flex align-center justify-space-between mb-1">
-                    <span class="text-caption font-weight-bold">{{ $t('Panels.AcePanel.ConnectionQuality') }}</span>
-                    <v-chip x-small :color="responseTimeColor" class="px-2">
-                        {{ device.health?.avg_response_time_ms || 0 }}ms
-                    </v-chip>
                 </div>
-                <div class="signal-bars d-flex align-center gap-1">
-                    <div
-                        v-for="i in 5"
-                        :key="`bar-${i}`"
-                        class="signal-bar"
-                        :class="{ active: i <= connectionQualityBars }"
-                        :style="{ height: `${i * 3 + 6}px` }" />
-                    <span class="text-caption ml-2">{{ connectionQualityText }}</span>
-                </div>
-            </div>
+            </v-expansion-panel-header>
 
-            <!-- Health Metrics Grid -->
-            <v-row dense class="health-metrics">
-                <!-- Uptime -->
-                <v-col cols="6">
-                    <div class="metric-card">
-                        <div class="d-flex align-center justify-space-between">
-                            <v-icon small color="primary">{{ mdiClockOutline }}</v-icon>
-                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Uptime') }}</span>
+            <!-- Expanded Content - Details on Demand -->
+            <v-expansion-panel-content class="pt-2">
+                <!-- Friendly Name Editor Section -->
+                <v-row dense class="mb-3">
+                    <v-col cols="12">
+                        <div class="metric-section">
+                            <div class="text-body-2 font-weight-bold mb-2">
+                                <v-icon small class="mr-1">{{ mdiTag }}</v-icon>
+                                {{ $t('Panels.AcePanel.FriendlyName') }}
+                            </div>
+                            <div class="d-flex align-center gap-2">
+                                <v-text-field
+                                    v-model="aliasInput"
+                                    :placeholder="$t('Panels.AcePanel.EnterFriendlyName')"
+                                    :rules="[aliasValidationRule]"
+                                    dense
+                                    outlined
+                                    class="flex-grow-1"
+                                    @keyup.enter="saveAlias"
+                                    @input="validateAliasInput">
+                                    <template #prepend-inner>
+                                        <v-icon small color="grey">{{ mdiLabel }}</v-icon>
+                                    </template>
+                                </v-text-field>
+                                <v-btn
+                                    small
+                                    color="primary"
+                                    :disabled="!aliasChanged"
+                                    @click="saveAlias">
+                                    <v-icon small left>{{ mdiContentSave }}</v-icon>
+                                    {{ $t('Panels.AcePanel.Save') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="hasAlias"
+                                    small
+                                    outlined
+                                    @click="clearAlias">
+                                    <v-icon small left>{{ mdiClose }}</v-icon>
+                                    {{ $t('Panels.AcePanel.Clear') }}
+                                </v-btn>
+                            </div>
+                            <div class="text-caption text--secondary mt-2">
+                                {{ $t('Panels.AcePanel.FriendlyNameDescription') }}
+                            </div>
                         </div>
-                        <div class="text-subtitle-2 font-weight-bold mt-1">{{ uptimeFormatted }}</div>
-                    </div>
-                </v-col>
+                    </v-col>
+                </v-row>
 
-                <!-- Error Count with Trend -->
-                <v-col cols="6">
-                    <div class="metric-card">
-                        <div class="d-flex align-center justify-space-between">
-                            <v-icon small :color="errorIconColor">{{ mdiAlertCircleOutline }}</v-icon>
-                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Errors') }}</span>
-                        </div>
-                        <div class="d-flex align-center mt-1">
+                <!-- Key Metrics (Only if Relevant) -->
+                <v-row dense class="mb-3">
+                    <!-- Show Errors only if > 0 -->
+                    <v-col v-if="device.health?.error_count > 0" cols="6" sm="4">
+                        <div class="metric-card-mini">
+                            <v-icon small :color="errorIconColor" class="mr-1">{{ mdiAlertCircleOutline }}</v-icon>
+                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Errors') }}: </span>
                             <span class="text-subtitle-2 font-weight-bold" :class="errorClass">
-                                {{ device.health?.error_count || 0 }}
+                                {{ device.health.error_count }}
                             </span>
-                            <v-spacer />
-                            <ace-panel-device-health-chart
-                                v-if="errorHistory.length > 1"
-                                :data="errorHistory"
-                                :width="50"
-                                :height="20"
-                                type="error"
-                                :show-fill="false"
-                                :stroke-width="1.5" />
                         </div>
-                    </div>
-                </v-col>
+                    </v-col>
 
-                <!-- Temperature -->
-                <v-col cols="6" v-if="device.health?.temperature !== undefined">
-                    <div class="metric-card">
-                        <div class="d-flex align-center justify-space-between">
-                            <v-icon small :color="temperatureColor">{{ mdiThermometer }}</v-icon>
-                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.DeviceTemp') }}</span>
+                    <!-- Response Time -->
+                    <v-col cols="6" sm="4">
+                        <div class="metric-card-mini">
+                            <v-icon small :color="responseTimeColor" class="mr-1">{{ mdiSpeedometer }}</v-icon>
+                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Response') }}: </span>
+                            <span class="text-subtitle-2 font-weight-bold">
+                                {{ device.health?.avg_response_time_ms || 0 }}ms
+                            </span>
                         </div>
-                        <div class="d-flex align-center mt-1">
+                    </v-col>
+
+                    <!-- Show Temperature only if > 0°C or if reported -->
+                    <v-col v-if="device.health?.temperature !== undefined && device.health.temperature > 0" cols="6" sm="4">
+                        <div class="metric-card-mini">
+                            <v-icon small :color="temperatureColor" class="mr-1">{{ mdiThermometer }}</v-icon>
+                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.DeviceTemp') }}: </span>
                             <span class="text-subtitle-2 font-weight-bold">
                                 {{ device.health.temperature }}°C
                             </span>
-                            <v-icon v-if="device.health.temperature > 60" x-small color="warning" class="ml-1">
-                                {{ mdiAlertCircle }}
-                            </v-icon>
                         </div>
-                    </div>
-                </v-col>
+                    </v-col>
 
-                <!-- Response Time Trend -->
-                <v-col cols="6">
-                    <div class="metric-card">
-                        <div class="d-flex align-center justify-space-between">
-                            <v-icon small color="info">{{ mdiSpeedometer }}</v-icon>
-                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Response') }}</span>
+                    <!-- Uptime -->
+                    <v-col cols="6" sm="4">
+                        <div class="metric-card-mini">
+                            <v-icon small color="primary" class="mr-1">{{ mdiClockOutline }}</v-icon>
+                            <span class="text-caption text--secondary">{{ $t('Panels.AcePanel.Uptime') }}: </span>
+                            <span class="text-subtitle-2 font-weight-bold">{{ uptimeFormatted }}</span>
                         </div>
-                        <div class="d-flex align-center mt-1">
-                            <span class="text-subtitle-2 font-weight-bold">{{ device.health?.avg_response_time_ms || 0 }}ms</span>
-                            <v-spacer />
-                            <ace-panel-device-health-chart
-                                v-if="responseTimeHistory.length > 1"
-                                :data="responseTimeHistory"
-                                :width="50"
-                                :height="20"
-                                type="response_time"
-                                :show-fill="false"
-                                :stroke-width="1.5" />
+                    </v-col>
+                </v-row>
+
+                <!-- Dryer Management -->
+                <v-row dense class="mb-3">
+                    <v-col cols="12">
+                        <ace-panel-device-dryer-card v-if="deviceDryer" :device="deviceDryer" />
+                        <v-card v-else outlined class="pa-3">
+                            <div class="text-center text--secondary">
+                                <v-icon>{{ mdiHairDryer }}</v-icon>
+                                <p class="text-caption mb-0 mt-1">{{ $t('Panels.AcePanel.NoDryerAvailable') }}</p>
+                            </div>
+                        </v-card>
+                    </v-col>
+                </v-row>
+
+                <!-- Actions -->
+                <v-row dense class="mb-2">
+                    <v-col cols="12">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <v-btn x-small outlined @click="copyDeviceId">
+                                <v-icon x-small left>{{ mdiContentCopy }}</v-icon>
+                                {{ $t('Panels.AcePanel.CopyDeviceID') }}
+                            </v-btn>
+                            <v-btn x-small outlined @click="reconnect">
+                                <v-icon x-small left>{{ mdiRefresh }}</v-icon>
+                                {{ $t('Panels.AcePanel.Reconnect') }}
+                            </v-btn>
                         </div>
-                    </div>
-                </v-col>
-            </v-row>
+                    </v-col>
+                </v-row>
 
-            <!-- Expandable Diagnostics Section -->
-            <v-expand-transition>
-                <div v-show="showDiagnostics" class="diagnostics-section mt-3">
-                    <v-divider class="mb-2" />
+                <!-- Diagnostics Section (Collapsible) -->
+                <v-expansion-panels flat accordion>
+                    <v-expansion-panel>
+                        <v-expansion-panel-header class="px-0 py-2">
+                            <span class="text-caption font-weight-bold">
+                                <v-icon x-small class="mr-1">{{ mdiChartLine }}</v-icon>
+                                {{ $t('Panels.AcePanel.Diagnostics') }}
+                            </span>
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                            <v-simple-table dense class="diagnostics-table">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.Port') }}</td>
+                                        <td class="text-caption font-weight-mono text-right">{{ device.port }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.DeviceID') }}</td>
+                                        <td class="text-caption font-weight-mono text-right">{{ device.device_id }}</td>
+                                    </tr>
+                                    <tr v-if="device.model">
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.Model') }}</td>
+                                        <td class="text-caption text-right">{{ device.model }} v{{ device.firmware || '1.0' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.ConnectionQuality') }}</td>
+                                        <td class="text-caption text-right">
+                                            {{ connectionQualityText }} ({{ device.health?.avg_response_time_ms || 0 }}ms)
+                                        </td>
+                                    </tr>
+                                    <tr v-if="device.health?.last_error">
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.LastError') }}</td>
+                                        <td class="text-caption error--text text-right">{{ device.health.last_error }}</td>
+                                    </tr>
+                                    <tr v-if="device.health?.reconnect_count !== undefined">
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.Reconnections') }}</td>
+                                        <td class="text-caption text-right">{{ device.health.reconnect_count }}</td>
+                                    </tr>
+                                    <tr v-if="device.health?.packets_sent !== undefined">
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.PacketsSent') }}</td>
+                                        <td class="text-caption text-right">{{ device.health.packets_sent }}</td>
+                                    </tr>
+                                    <tr v-if="device.health?.packets_received !== undefined">
+                                        <td class="text-caption">{{ $t('Panels.AcePanel.PacketsReceived') }}</td>
+                                        <td class="text-caption text-right">{{ device.health.packets_received }}</td>
+                                    </tr>
+                                </tbody>
+                            </v-simple-table>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+                </v-expansion-panels>
 
-                    <div class="text-caption font-weight-bold mb-2">
-                        <v-icon x-small class="mr-1">{{ mdiChartLine }}</v-icon>
-                        {{ $t('Panels.AcePanel.DiagnosticsDetails') }}
-                    </div>
-
-                    <v-simple-table dense class="diagnostics-table">
-                        <tbody>
-                            <tr>
-                                <td class="text-caption">{{ $t('Panels.AcePanel.Port') }}</td>
-                                <td class="text-caption font-weight-mono text-right">{{ device.port }}</td>
-                            </tr>
-                            <tr v-if="device.device_id">
-                                <td class="text-caption">{{ $t('Panels.AcePanel.DeviceID') }}</td>
-                                <td class="text-caption font-weight-mono text-right">{{ device.device_id }}</td>
-                            </tr>
-                            <tr v-if="device.health?.last_error">
-                                <td class="text-caption">{{ $t('Panels.AcePanel.LastError') }}</td>
-                                <td class="text-caption error--text text-right">{{ device.health.last_error }}</td>
-                            </tr>
-                            <tr v-if="device.health?.reconnect_count !== undefined">
-                                <td class="text-caption">{{ $t('Panels.AcePanel.Reconnections') }}</td>
-                                <td class="text-caption text-right">{{ device.health.reconnect_count }}</td>
-                            </tr>
-                            <tr v-if="device.health?.packets_sent !== undefined">
-                                <td class="text-caption">{{ $t('Panels.AcePanel.PacketsSent') }}</td>
-                                <td class="text-caption text-right">{{ device.health.packets_sent }}</td>
-                            </tr>
-                            <tr v-if="device.health?.packets_received !== undefined">
-                                <td class="text-caption">{{ $t('Panels.AcePanel.PacketsReceived') }}</td>
-                                <td class="text-caption text-right">{{ device.health.packets_received }}</td>
-                            </tr>
-                        </tbody>
-                    </v-simple-table>
-
-                    <!-- Alert Badge for Critical Issues -->
-                    <v-alert
-                        v-if="hasIssues"
-                        dense
-                        outlined
-                        type="warning"
-                        class="mt-2 mb-0"
-                        text>
-                        <div class="text-caption">
-                            {{ issuesText }}
-                        </div>
-                    </v-alert>
-                </div>
-            </v-expand-transition>
-
-            <!-- Toggle Diagnostics Button -->
-            <v-btn
-                text
-                x-small
-                block
-                class="mt-2"
-                @click="showDiagnostics = !showDiagnostics">
-                <v-icon x-small left>{{ showDiagnostics ? mdiChevronUp : mdiChevronDown }}</v-icon>
-                {{ showDiagnostics ? $t('Panels.AcePanel.HideDiagnostics') : $t('Panels.AcePanel.ShowDiagnostics') }}
-            </v-btn>
-        </v-card-text>
-    </v-card>
+                <!-- Issue Alert -->
+                <v-alert v-if="hasIssues" dense outlined type="warning" class="mt-3 mb-0" text>
+                    <div class="text-caption">{{ issuesText }}</div>
+                </v-alert>
+            </v-expansion-panel-content>
+        </v-expansion-panel>
+    </v-expansion-panels>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Mixins } from 'vue-property-decorator'
+import { Component, Prop, Mixins, Watch } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
+import AceMixin from '@/components/mixins/ace'
 import {
-    mdiCheckCircle,
-    mdiAlertCircle,
-    mdiHelpCircle,
-    mdiHeart,
-    mdiSignal,
-    mdiClockOutline,
+    mdiCircle,
     mdiAlertCircleOutline,
     mdiThermometer,
-    mdiSpeedometer,
+    mdiClockOutline,
+    mdiPrinter3dNozzle,
+    mdiTag,
+    mdiLabel,
+    mdiContentCopy,
+    mdiContentSave,
+    mdiRefresh,
     mdiChartLine,
-    mdiChevronUp,
-    mdiChevronDown,
+    mdiClose,
+    mdiSpeedometer,
+    mdiHairDryer,
 } from '@mdi/js'
 
 @Component({
     components: {
-        AcePanelDeviceHealthChart: () => import('./AcePanelDeviceHealthChart.vue'),
+        AcePanelDeviceDryerCard: () => import('./AcePanelDeviceDryerCard.vue'),
     },
 })
-export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
+export default class AcePanelDeviceCard extends Mixins(BaseMixin, AceMixin) {
     @Prop({ type: Object, required: true }) readonly device!: any
 
-    mdiCheckCircle = mdiCheckCircle
-    mdiAlertCircle = mdiAlertCircle
-    mdiHelpCircle = mdiHelpCircle
-    mdiHeart = mdiHeart
-    mdiSignal = mdiSignal
-    mdiClockOutline = mdiClockOutline
+    mdiCircle = mdiCircle
     mdiAlertCircleOutline = mdiAlertCircleOutline
     mdiThermometer = mdiThermometer
-    mdiSpeedometer = mdiSpeedometer
+    mdiClockOutline = mdiClockOutline
+    mdiPrinter3dNozzle = mdiPrinter3dNozzle
+    mdiTag = mdiTag
+    mdiLabel = mdiLabel
+    mdiContentCopy = mdiContentCopy
+    mdiContentSave = mdiContentSave
+    mdiRefresh = mdiRefresh
     mdiChartLine = mdiChartLine
-    mdiChevronUp = mdiChevronUp
-    mdiChevronDown = mdiChevronDown
+    mdiClose = mdiClose
+    mdiSpeedometer = mdiSpeedometer
+    mdiHairDryer = mdiHairDryer
 
-    showDiagnostics = false
+    aliasInput = ''
+
+    mounted() {
+        this.aliasInput = this.device.alias || ''
+    }
+
+    @Watch('device.alias')
+    onAliasChange(newAlias: string) {
+        this.aliasInput = newAlias || ''
+    }
+
+    get deviceDisplayName(): string {
+        // Show alias if set, otherwise show device_id
+        return this.device.alias || this.device.device_id || this.device.name || 'Unknown Device'
+    }
+
+    get hasAlias(): boolean {
+        return !!(this.device.alias && this.device.alias !== this.device.device_id)
+    }
+
+    get aliasChanged(): boolean {
+        const currentAlias = this.device.alias || ''
+        return this.aliasInput.trim() !== currentAlias && this.aliasInput.trim() !== ''
+    }
 
     get statusColor(): string {
         if (this.hasIssues) return 'warning'
-
-        switch (this.device.connection_status) {
-            case 'connected':
-                return 'success'
-            case 'disconnected':
-                return 'error'
-            default:
-                return 'grey'
-        }
+        const connected = this.device.connected ?? false
+        return connected ? 'success' : 'error'
     }
 
-    get statusIcon(): string {
-        switch (this.device.connection_status) {
-            case 'connected':
-                return this.mdiCheckCircle
-            case 'disconnected':
-                return this.mdiAlertCircle
-            default:
-                return this.mdiHelpCircle
-        }
-    }
-
-    get connectionStatusText(): string {
-        return this.device.connection_status?.charAt(0).toUpperCase() + this.device.connection_status?.slice(1) || 'Unknown'
-    }
-
-    // Health Score (0-100) based on multiple factors
     get healthScore(): number {
         let score = 100
-
-        // Deduct for errors
         const errorCount = this.device.health?.error_count ?? 0
-        score -= Math.min(errorCount * 5, 50) // Up to -50 for errors
-
-        // Deduct for slow response time
+        score -= Math.min(errorCount * 5, 50)
         const responseTime = this.device.health?.avg_response_time_ms ?? 0
         if (responseTime > 300) score -= 30
         else if (responseTime > 150) score -= 15
         else if (responseTime > 50) score -= 5
-
-        // Deduct for high temperature
         const temp = this.device.health?.temperature ?? 0
         if (temp > 70) score -= 20
         else if (temp > 60) score -= 10
-
-        // Deduct if disconnected
-        if (this.device.connection_status === 'disconnected') score -= 50
-
+        const connected = this.device.connected ?? false
+        if (!connected) score -= 50
         return Math.max(0, Math.min(100, score))
     }
 
@@ -315,10 +325,10 @@ export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
         return 'error'
     }
 
-    // Connection Quality (1-5 bars)
     get connectionQualityBars(): number {
         const responseTime = this.device.health?.avg_response_time_ms ?? 999
-        if (this.device.connection_status !== 'connected') return 0
+        const connected = this.device.connected ?? false
+        if (!connected) return 0
         if (responseTime < 50) return 5
         if (responseTime < 100) return 4
         if (responseTime < 200) return 3
@@ -347,16 +357,11 @@ export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
     get uptimeFormatted(): string {
         const uptime = this.device.health?.uptime ?? 0
         if (uptime === 0) return 'N/A'
-
         const days = Math.floor(uptime / 86400)
         const hours = Math.floor((uptime % 86400) / 3600)
         const minutes = Math.floor((uptime % 3600) / 60)
-
-        if (days > 0) {
-            return `${days}d ${hours}h`
-        } else if (hours > 0) {
-            return `${hours}h ${minutes}m`
-        }
+        if (days > 0) return `${days}d ${hours}h`
+        else if (hours > 0) return `${hours}h ${minutes}m`
         return `${minutes}m`
     }
 
@@ -382,118 +387,146 @@ export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
         return 'error'
     }
 
-    // Mock historical data (in production, this would come from the backend)
-    get errorHistory(): number[] {
-        const history = this.device.health?.error_history ?? []
-        if (history.length > 0) return history
-
-        // Generate mock data for demonstration
-        const current = this.device.health?.error_count ?? 0
-        return [
-            Math.max(0, current - 3),
-            Math.max(0, current - 2),
-            Math.max(0, current - 1),
-            current,
-        ]
-    }
-
-    get responseTimeHistory(): number[] {
-        const history = this.device.health?.response_time_history ?? []
-        if (history.length > 0) return history
-
-        // Generate mock data for demonstration
-        const current = this.device.health?.avg_response_time_ms ?? 0
-        return [
-            current + Math.random() * 20 - 10,
-            current + Math.random() * 20 - 10,
-            current + Math.random() * 20 - 10,
-            current,
-        ]
-    }
-
     get hasIssues(): boolean {
         const errorCount = this.device.health?.error_count ?? 0
         const temp = this.device.health?.temperature ?? 0
         const responseTime = this.device.health?.avg_response_time_ms ?? 0
-
-        return errorCount > 5 || temp > 65 || responseTime > 300 || this.device.connection_status === 'disconnected'
+        const connected = this.device.connected ?? false
+        return errorCount > 5 || temp > 65 || responseTime > 300 || !connected
     }
 
     get issuesText(): string {
         const issues: string[] = []
-
         const errorCount = this.device.health?.error_count ?? 0
         if (errorCount > 10) issues.push(this.$t('Panels.AcePanel.HighErrorCount').toString())
         else if (errorCount > 5) issues.push(this.$t('Panels.AcePanel.ModerateErrorCount').toString())
-
         const temp = this.device.health?.temperature ?? 0
         if (temp > 70) issues.push(this.$t('Panels.AcePanel.CriticalTemp').toString())
         else if (temp > 65) issues.push(this.$t('Panels.AcePanel.HighTemp').toString())
-
         const responseTime = this.device.health?.avg_response_time_ms ?? 0
         if (responseTime > 400) issues.push(this.$t('Panels.AcePanel.VerySlowResponse').toString())
         else if (responseTime > 300) issues.push(this.$t('Panels.AcePanel.SlowResponse').toString())
+        const connected = this.device.connected ?? false
+        if (!connected) issues.push(this.$t('Panels.AcePanel.DeviceDisconnected').toString())
+        return issues.join('. ')
+    }
 
-        if (this.device.connection_status === 'disconnected') {
-            issues.push(this.$t('Panels.AcePanel.DeviceDisconnected').toString())
+    get deviceDryer(): any | null {
+        // The device prop already contains dryer status in device.status.dryer_status
+        // If device has dryer data, return the device itself (it's the expected format)
+        if (this.device.status?.dryer_status) {
+            return this.device
         }
 
-        return issues.join('. ')
+        // Fallback: Check ace.dryers array for multi-device dryer data
+        const dryers = this.ace.dryers ?? []
+        const dryerData = dryers.find((d: any) => d.device_id === this.device.device_id)
+
+        if (dryerData) {
+            // Map dryer data to device format expected by AcePanelDeviceDryerCard
+            return {
+                device_id: this.device.device_id,
+                device_name: this.device.name || this.device.alias,
+                name: this.device.name,
+                gate_offset: this.device.gate_offset,
+                status: {
+                    temp: dryerData.current_temp ?? 0,
+                    dryer_status: {
+                        status: dryerData.status,
+                        target_temp: dryerData.target_temp,
+                        duration: dryerData.duration,
+                        remain_time: dryerData.remain_time,
+                    }
+                }
+            }
+        }
+
+        // No dryer data available
+        return null
+    }
+
+    aliasValidationRule(value: string): boolean | string {
+        if (!value || value.trim() === '') return true
+        const validPattern = /^[a-zA-Z0-9_]+$/
+        if (!validPattern.test(value)) {
+            return this.$t('Panels.AcePanel.InvalidAlias').toString()
+        }
+        return true
+    }
+
+    validateAliasInput(value: string) {
+        // Remove invalid characters as user types
+        const cleaned = value.replace(/[^a-zA-Z0-9_]/g, '')
+        if (cleaned !== value) {
+            this.aliasInput = cleaned
+        }
+    }
+
+    saveAlias() {
+        if (this.aliasInput.trim() && this.aliasChanged) {
+            // Validate before saving
+            const validation = this.aliasValidationRule(this.aliasInput)
+            if (validation === true) {
+                this.doSendAce(`ACE_ALIAS DEVICE=${this.device.device_id} NAME=${this.aliasInput.trim()}`)
+                this.$toast.success(this.$t('Panels.AcePanel.FriendlyNameSaved').toString())
+            } else {
+                this.$toast.error(validation)
+            }
+        }
+    }
+
+    clearAlias() {
+        this.doSendAce(`ACE_UNALIAS DEVICE=${this.device.device_id}`)
+        this.aliasInput = ''
+        this.$toast.success(this.$t('Panels.AcePanel.FriendlyNameCleared').toString())
+    }
+
+    copyDeviceId() {
+        navigator.clipboard.writeText(this.device.device_id)
+        this.$toast.success(this.$t('Panels.AcePanel.DeviceIDCopied').toString())
+    }
+
+    reconnect() {
+        this.doSendAce(`ACE_RECONNECT_DEVICE DEVICE=${this.device.device_id}`)
+        this.$toast.info(this.$t('Panels.AcePanel.ReconnectingDevice').toString())
     }
 }
 </script>
 
 <style scoped>
-.ace-device-card {
-    transition: all 0.3s ease;
-    position: relative;
+.ace-device-row {
+    margin-bottom: 8px;
 }
 
-.ace-device-card:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+.device-header {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
 }
 
-.ace-device-card.card-has-issues {
-    border-color: rgba(255, 152, 0, 0.5);
-    border-width: 2px;
+.device-has-issues .device-header {
+    border-left-color: var(--v-warning-base);
 }
 
-.font-weight-mono {
-    font-family: monospace;
-    font-size: 0.9em;
+.device-name {
+    min-width: 150px;
 }
 
-/* Connection Quality Signal Bars */
-.signal-bars {
-    padding: 4px 0;
+/* Mini Signal Bars for Collapsed View */
+.signal-bars-inline {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
 }
 
-.signal-bar {
-    width: 4px;
+.signal-bar-mini {
+    width: 3px;
     background-color: rgba(128, 128, 128, 0.2);
-    border-radius: 2px;
+    border-radius: 1px;
     transition: all 0.3s ease;
 }
 
-.signal-bar.active {
-    background-color: var(--v-success-base);
-}
-
-.signal-bars .signal-bar:nth-child(1).active {
-    background-color: var(--v-error-base);
-}
-
-.signal-bars .signal-bar:nth-child(2).active {
-    background-color: var(--v-warning-base);
-}
-
-.signal-bars .signal-bar:nth-child(3).active {
-    background-color: var(--v-info-base);
-}
-
-.signal-bars .signal-bar:nth-child(4).active,
-.signal-bars .signal-bar:nth-child(5).active {
+.signal-bar-mini.active {
     background-color: var(--v-success-base);
 }
 
@@ -501,18 +534,25 @@ export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
     gap: 4px;
 }
 
-/* Metric Cards */
-.metric-card {
-    padding: 8px;
-    border-radius: 6px;
-    background-color: rgba(var(--v-theme-surface), 0.05);
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    transition: all 0.2s ease;
+.gap-2 {
+    gap: 8px;
 }
 
-.metric-card:hover {
-    background-color: rgba(var(--v-theme-surface), 0.1);
-    border-color: rgba(var(--v-primary-base), 0.3);
+/* Metric Sections */
+.metric-section {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: rgba(var(--v-theme-surface), 0.03);
+    border: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+.metric-card-mini {
+    padding: 8px;
+    border-radius: 6px;
+    background-color: rgba(var(--v-theme-surface), 0.03);
+    border: 1px solid rgba(128, 128, 128, 0.1);
+    display: flex;
+    align-items: center;
 }
 
 /* Diagnostics Table */
@@ -529,44 +569,34 @@ export default class AcePanelDeviceCard extends Mixins(BaseMixin) {
     border-bottom: none !important;
 }
 
-.diagnostics-section {
-    border-radius: 8px;
-    padding: 8px;
-    background-color: rgba(var(--v-theme-surface), 0.03);
-}
-
-/* Health Metrics */
-.health-metrics {
-    margin-top: 8px;
+.font-weight-mono {
+    font-family: monospace;
+    font-size: 0.9em;
 }
 </style>
 
 <style>
 /* Dark theme adjustments */
-html.theme--dark .signal-bar {
+html.theme--dark .signal-bar-mini {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-html.theme--dark .metric-card {
+html.theme--dark .metric-section,
+html.theme--dark .metric-card-mini,
+html.theme--dark .gate-mini-card {
     background-color: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
-html.theme--dark .metric-card:hover {
-    background-color: rgba(255, 255, 255, 0.07);
-}
-
 /* Light theme adjustments */
-html.theme--light .signal-bar {
+html.theme--light .signal-bar-mini {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-html.theme--light .metric-card {
+html.theme--light .metric-section,
+html.theme--light .metric-card-mini,
+html.theme--light .gate-mini-card {
     background-color: rgba(0, 0, 0, 0.02);
     border-color: rgba(0, 0, 0, 0.08);
-}
-
-html.theme--light .metric-card:hover {
-    background-color: rgba(0, 0, 0, 0.04);
 }
 </style>
