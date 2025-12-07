@@ -4,22 +4,6 @@
             {{ statusText }}
         </v-chip>
 
-        <v-tooltip top>
-            <template #activator="{ on, attrs }">
-                <v-btn
-                    x-small
-                    :color="aceFeedAssist ? 'primary' : 'grey'"
-                    :outlined="!aceFeedAssist"
-                    v-bind="attrs"
-                    v-on="on"
-                    @click="toggleFeedAssist">
-                    <v-icon x-small left>{{ mdiAutoFix }}</v-icon>
-                    {{ $t('Panels.AcePanel.FeedAssist') }}
-                </v-btn>
-            </template>
-            <span>{{ $t('Panels.AcePanel.ToggleFeedAssist') }}</span>
-        </v-tooltip>
-
         <v-tooltip v-if="aceShowEndlessSpool" top>
             <template #activator="{ on, attrs }">
                 <v-btn
@@ -85,11 +69,10 @@
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AceMixin from '@/components/mixins/ace'
-import { mdiAutoFix, mdiInfinity, mdiSync } from '@mdi/js'
+import { mdiInfinity, mdiSync } from '@mdi/js'
 
 @Component
 export default class AcePanelStatus extends Mixins(BaseMixin, AceMixin) {
-    mdiAutoFix = mdiAutoFix
     mdiInfinity = mdiInfinity
     mdiSync = mdiSync
 
@@ -132,17 +115,6 @@ export default class AcePanelStatus extends Mixins(BaseMixin, AceMixin) {
     get statusText() {
         const status = this.aceStatus.charAt(0).toUpperCase() + this.aceStatus.slice(1)
         return status
-    }
-
-    toggleFeedAssist() {
-        // Use currently active gate, or selected gate, or default to 0
-        const index =
-            this.aceActiveGate >= 0 ? this.aceActiveGate : this.aceSelectedGate >= 0 ? this.aceSelectedGate : 0
-        if (this.aceFeedAssist) {
-            this.aceDisableFeedAssist(index)
-        } else {
-            this.aceEnableFeedAssist(index)
-        }
     }
 
     toggleEndlessSpool() {

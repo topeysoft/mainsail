@@ -753,7 +753,6 @@
             "NoDevicesFound": "No ACE devices found",
             "NoDevicesConfigured": "No ACE devices configured. Switch to the Devices tab to scan for devices.",
             "ScanForDevices": "Scan for Devices",
-            "GoToDevicesTab": "Go to Devices Tab",
             "DeviceScanStarted": "Device scan started",
             "DeviceScanFailed": "Failed to scan for devices",
             "GatesRange": "Gates {start}-{end}",

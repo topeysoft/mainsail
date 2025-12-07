@@ -58,9 +58,9 @@
                             <p class="text-body-2 text--secondary mb-4">
                                 {{ $t('Panels.AcePanel.NoDevicesFoundDescription') }}
                             </p>
-                            <v-btn color="primary" @click="activeTab = 1">
-                                <v-icon left>{{ mdiViewDashboard }}</v-icon>
-                                {{ $t('Panels.AcePanel.GoToDevicesTab') }}
+                            <v-btn color="primary" @click="scanDevices" :loading="scanning">
+                                <v-icon left>{{ mdiRefresh }}</v-icon>
+                                {{ $t('Panels.AcePanel.ScanForDevices') }}
                             </v-btn>
                         </v-card-text>
                     </v-card>
@@ -82,7 +82,7 @@
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AceMixin from '@/components/mixins/ace'
-import { mdiPrinter3dNozzle, mdiAlertCircleOutline, mdiViewDashboard } from '@mdi/js'
+import { mdiPrinter3dNozzle, mdiAlertCircleOutline, mdiRefresh } from '@mdi/js'
 
 @Component({
     components: {
@@ -94,8 +94,9 @@ import { mdiPrinter3dNozzle, mdiAlertCircleOutline, mdiViewDashboard } from '@md
 export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
     mdiPrinter3dNozzle = mdiPrinter3dNozzle
     mdiAlertCircleOutline = mdiAlertCircleOutline
-    mdiViewDashboard = mdiViewDashboard
+    mdiRefresh = mdiRefresh
     activeTab = 0
+    scanning = false
     deviceExpanded: Record<string, boolean> = {}
 
     mounted() {
@@ -143,6 +144,24 @@ export default class AcePanel extends Mixins(BaseMixin, AceMixin) {
                 ref[0].expanded = false
             }
         })
+    }
+
+    async scanDevices() {
+        this.scanning = true
+        try {
+            // Send scan command with APPLY=1 to automatically apply discovered devices
+            this.aceScanDevices(true, false)
+
+            // Show success toast
+            this.$toast.success(this.$t('Panels.AcePanel.DeviceScanStarted').toString())
+        } catch (error) {
+            this.$toast.error(this.$t('Panels.AcePanel.DeviceScanFailed').toString())
+        } finally {
+            // Stop scanning indicator after a short delay
+            setTimeout(() => {
+                this.scanning = false
+            }, 2000)
+        }
     }
 }
 </script>

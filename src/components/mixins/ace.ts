@@ -10,6 +10,7 @@ export interface AceGate {
     spool_id?: number
     loaded?: boolean
     selected?: boolean
+    feed_assist?: boolean
 }
 
 export interface AceDryerStatus {
@@ -106,6 +107,10 @@ export default class AceMixin extends Vue {
         return this.ace.feed_assist ?? false
     }
 
+    get aceGateFeedAssist(): boolean[] {
+        return this.ace.gate_feed_assist ?? [false, false, false, false]
+    }
+
     get aceFilamentPos(): string {
         return this.ace.filament_pos ?? 'unknown'
     }
@@ -167,6 +172,7 @@ export default class AceMixin extends Vue {
                         spool_id: spoolId,
                         loaded: gateState === 'loaded' || gateState === 'active',
                         selected: index === this.aceSelectedGate,
+                        feed_assist: this.aceGateFeedAssist[index] ?? false,
                     }
                 }
             }
@@ -183,6 +189,7 @@ export default class AceMixin extends Vue {
             spool_id: spoolId,
             loaded: gateState === 'loaded' || gateState === 'active',
             selected: index === this.aceSelectedGate,
+            feed_assist: this.aceGateFeedAssist[index] ?? false,
         }
     }
 
@@ -198,6 +205,7 @@ export default class AceMixin extends Vue {
         const states = this.aceActiveGateStates
         const spoolIds = this.aceSpoolIds
         const selectedGate = this.aceSelectedGate
+        const feedAssist = this.aceGateFeedAssist
 
         // Build gates array using the cached reactive values
         return Array.from({ length: numGates }, (_, index) => {
@@ -211,6 +219,7 @@ export default class AceMixin extends Vue {
                 spool_id: spoolIds[index] ?? 0,
                 loaded: gateState === 'loaded' || gateState === 'active',
                 selected: index === selectedGate,
+                feed_assist: feedAssist[index] ?? false,
             }
         })
     }
@@ -236,9 +245,10 @@ export default class AceMixin extends Vue {
     }
 
     // Check if printer is in a state where ACE commands are safe
+    // Note: Dryer commands are always safe to use, even during printing
     get aceCanSendCommands(): boolean {
-        const printerState = this.$store.state.printer.print_stats?.state ?? 'standby'
-        return !['printing'].includes(printerState)
+        // Allow all commands - dryer operations don't interfere with printing
+        return true
     }
 
     // Check if dryer is currently active
@@ -317,7 +327,7 @@ export default class AceMixin extends Vue {
     }
 
     aceSetSelectedGate(gate: number) {
-        this.doSendAce(`ACE_SET_SELECTED GATE=${gate}`)
+        this.doSendAce(`ACE_SET_GATE GATE=${gate}`)
     }
 
     aceClearSelection() {
