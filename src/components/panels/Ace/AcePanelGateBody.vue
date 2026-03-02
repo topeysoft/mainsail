@@ -12,15 +12,15 @@
 
                     <!-- Main Spool SVG with Thick Ring -->
                     <div class="filament-spool" :class="{ 'spool-spinning': isLoading }">
-                        <svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <!-- Circular mask for filament level -->
                                 <mask :id="`level-mask-${gate.index}`">
-                                    <rect x="0" y="0" width="110" height="110" fill="black" />
+                                    <rect x="0" y="0" width="100" height="100" fill="black" />
                                     <rect
                                         x="0"
-                                        :y="110 - filamentLevel"
-                                        width="110"
+                                        :y="100 - filamentLevel"
+                                        width="100"
                                         :height="filamentLevel"
                                         fill="white" />
                                 </mask>
@@ -51,86 +51,62 @@
                                 </linearGradient>
                             </defs>
 
-                            <!-- Background Ring (empty state) -->
-                            <!-- Outer contrast stroke -->
+                            <!-- Empty State Ring - only show when empty and not loading -->
                             <circle
-                                cx="55"
-                                cy="55"
-                                r="36"
-                                fill="none"
-                                :stroke="contrastColor"
-                                stroke-width="18"
-                                opacity="0.3"
-                                class="ring-background-outline" />
-                            <!-- Inner colored ring -->
-                            <circle
-                                cx="55"
-                                cy="55"
-                                r="36"
+                                v-if="isEmpty && !isLoading"
+                                cx="50"
+                                cy="50"
+                                r="32"
                                 fill="none"
                                 :stroke="iconColor"
-                                stroke-width="16"
-                                opacity="0.15"
-                                class="ring-background" />
+                                stroke-width="14"
+                                opacity="0.25"
+                                class="ring-empty" />
 
-                            <!-- Filled Ring (shows filament level) -->
-                            <!-- Outer contrast stroke -->
+                            <!-- Filled Ring - shows filament level with true colors -->
                             <circle
-                                v-if="!isLoading"
-                                cx="55"
-                                cy="55"
-                                r="36"
-                                fill="none"
-                                :stroke="contrastColor"
-                                stroke-width="18"
-                                opacity="0.5"
-                                class="ring-filled-outline"
-                                :mask="`url(#level-mask-${gate.index})`" />
-                            <!-- Inner colored ring -->
-                            <circle
-                                v-if="!isLoading"
-                                cx="55"
-                                cy="55"
-                                r="36"
+                                v-if="!isLoading && !isEmpty"
+                                cx="50"
+                                cy="50"
+                                r="32"
                                 fill="none"
                                 :stroke="iconColor"
-                                stroke-width="16"
-                                opacity="0.9"
+                                stroke-width="14"
+                                opacity="1.0"
                                 class="ring-filled"
                                 :mask="`url(#level-mask-${gate.index})`" />
 
-                            <!-- Loading Ring (animated) -->
-                            <!-- Outer contrast stroke -->
+                            <!-- Loading Ring - animated gradient -->
                             <circle
                                 v-if="isLoading"
-                                cx="55"
-                                cy="55"
-                                r="36"
-                                fill="none"
-                                :stroke="contrastColor"
-                                stroke-width="18"
-                                opacity="0.5"
-                                class="ring-loading-outline" />
-                            <!-- Inner animated ring -->
-                            <circle
-                                v-if="isLoading"
-                                cx="55"
-                                cy="55"
-                                r="36"
+                                cx="50"
+                                cy="50"
+                                r="32"
                                 fill="none"
                                 :stroke="`url(#${spinGradientId})`"
-                                stroke-width="16"
+                                stroke-width="14"
                                 class="ring-loading" />
+
+                            <!-- Subtle outer edge for all states (provides depth) -->
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="39"
+                                fill="none"
+                                :stroke="contrastColor"
+                                stroke-width="1"
+                                opacity="0.2"
+                                class="ring-edge" />
 
                             <!-- Gate Number in Center -->
                             <text
-                                x="55"
-                                y="55"
+                                x="50"
+                                y="50"
                                 text-anchor="middle"
                                 dominant-baseline="central"
                                 class="gate-number"
                                 :fill="numberColor"
-                                font-size="28"
+                                font-size="26"
                                 font-weight="bold">
                                 {{ gate.index }}
                             </text>
@@ -174,6 +150,7 @@
             <template #activator="{ on, attrs }">
                 <div class="text-center material-info" v-bind="attrs" v-on="on">
                     <span class="text-caption font-weight-bold d-block">{{ materialDisplay }}</span>
+                    <span class="text-caption d-block" style="font-size: 0.65rem; opacity: 0.8;">{{ temperatureDisplay }}</span>
                 </div>
             </template>
             <span>{{ materialTooltipText }}</span>
@@ -274,6 +251,11 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
         return this.gate.material || '----'
     }
 
+    get temperatureDisplay(): string {
+        const temp = this.gate.temp
+        return temp && temp > 0 ? `${temp}°C` : '----'
+    }
+
     get maskId(): string {
         return `spool-mask-${this.gate.index}`
     }
@@ -297,7 +279,9 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
         if (this.isEmpty) {
             return this.$t('Panels.AcePanel.GateEmptyLoadFilament').toString()
         }
-        return this.$t('Panels.AcePanel.ClickToActivateTool', { tool: this.gate.index }).toString()
+        const material = this.gate.material || 'Unknown'
+        const temp = this.gate.temp && this.gate.temp > 0 ? `${this.gate.temp}°C` : 'Not set'
+        return `${material} @ ${temp} - Click to activate tool ${this.gate.index}`
     }
 }
 </script>
@@ -312,7 +296,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
 
 .gate-body-container.is-empty {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.85;
 }
 
 .gate-body-container.is-active {
@@ -328,6 +312,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
 .filament-spool-wrapper {
     position: relative;
     display: inline-block;
+    overflow: visible;
 }
 
 .is-empty .filament-spool-wrapper {
@@ -375,8 +360,8 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 120px;
-    height: 120px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     opacity: 0.3;
     filter: blur(15px);
@@ -408,6 +393,7 @@ export default class AcePanelGateBody extends Mixins(AceMixin) {
 /* Material Info */
 .material-info {
     transition: all 0.2s ease;
+    line-height: 1.2;
 }
 
 .material-info:hover {

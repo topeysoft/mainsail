@@ -22,7 +22,6 @@
 import { Component, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
 import { JanusJs, JanusSession, JanusStreamingPlugin } from 'typed_janus_js'
 import BaseMixin from '@/components/mixins/base'
-import { ConstructorOptions } from 'typed_janus_js/src/interfaces/janus'
 import { GuiWebcamStateWebcam } from '@/store/gui/webcams/types'
 import WebcamMixin from '@/components/mixins/webcam'
 
@@ -75,9 +74,7 @@ export default class JanusStreamer extends Mixins(BaseMixin, WebcamMixin) {
     }
 
     get streamConfig() {
-        const config: ConstructorOptions = {
-            server: this.url.toString(),
-        }
+        const config: ConstructorParameters<typeof JanusJs>[0] = { server: this.url.toString() }
 
         if (this.useStun) {
             config.iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }]

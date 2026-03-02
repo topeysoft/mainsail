@@ -8,6 +8,7 @@
         "name": "Stefan Dej"
     },
     "scripts": {
+        "dev": "vite",
         "serve": "vite serve",
         "build": "vite build && npm run build.zip",
         "format": "npm run format:base -- --write",

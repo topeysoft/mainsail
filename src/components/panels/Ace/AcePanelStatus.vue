@@ -36,6 +36,23 @@
             <span>{{ $t('Panels.AcePanel.SyncSelectionTooltip') }}</span>
         </v-tooltip>
 
+        <v-tooltip top>
+            <template #activator="{ on, attrs }">
+                <v-btn
+                    x-small
+                    :color="hasLoadedTool ? 'warning' : 'grey'"
+                    outlined
+                    :disabled="!hasLoadedTool"
+                    v-bind="attrs"
+                    v-on="on"
+                    @click="unloadTool">
+                    <v-icon x-small left>{{ mdiEject }}</v-icon>
+                    {{ $t('Panels.AcePanel.UnloadTool') }}
+                </v-btn>
+            </template>
+            <span>{{ hasLoadedTool ? $t('Panels.AcePanel.UnloadToolTooltip') : $t('Panels.AcePanel.NoToolLoaded') }}</span>
+        </v-tooltip>
+
         <v-dialog v-model="showSyncDialog" max-width="400">
             <v-card>
                 <v-card-title class="text-h6">
@@ -69,24 +86,26 @@
 import { Component, Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import AceMixin from '@/components/mixins/ace'
-import { mdiInfinity, mdiSync } from '@mdi/js'
+import { mdiInfinity, mdiSync, mdiEject } from '@mdi/js'
 
 @Component
 export default class AcePanelStatus extends Mixins(BaseMixin, AceMixin) {
     mdiInfinity = mdiInfinity
     mdiSync = mdiSync
+    mdiEject = mdiEject
 
     showSyncDialog = false
     syncDialogValue = -1
 
     get gateSelectionItems() {
-        return [
-            { text: 'None', value: -1 },
-            { text: 'T0', value: 0 },
-            { text: 'T1', value: 1 },
-            { text: 'T2', value: 2 },
-            { text: 'T3', value: 3 },
-        ]
+        const items = [{ text: 'None', value: -1 }]
+
+        // Dynamically generate tool selection items based on number of gates
+        for (let i = 0; i < this.aceNumGates; i++) {
+            items.push({ text: `T${i}`, value: i })
+        }
+
+        return items
     }
 
     applySyncSelection() {
@@ -119,6 +138,14 @@ export default class AcePanelStatus extends Mixins(BaseMixin, AceMixin) {
 
     toggleEndlessSpool() {
         this.aceSetEndlessSpool(!this.aceEndlessSpool)
+    }
+
+    unloadTool() {
+        this.aceUnload()
+    }
+
+    get hasLoadedTool(): boolean {
+        return this.aceActiveGate >= 0
     }
 }
 </script>

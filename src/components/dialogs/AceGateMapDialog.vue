@@ -125,13 +125,13 @@
                 <!-- Temperature Section -->
                 <div class="section-label mb-2">
                     <v-icon small class="mr-1">{{ mdiThermometer }}</v-icon>
-                    {{ $t('Panels.AcePanel.DryerTemperature') }}
+                    {{ $t('Panels.AcePanel.ExtrusionTemperature') }}
                 </div>
                 <v-text-field
                     v-model.number="editTemp"
                     type="number"
-                    min="30"
-                    max="80"
+                    min="150"
+                    max="300"
                     suffix="°C"
                     outlined
                     dense
@@ -264,20 +264,20 @@ export default class AceGateMapDialog extends Mixins(BaseMixin, AceMixin) {
         'Other',
     ]
 
-    // Default dryer temperatures for each material type
+    // Default print/extrusion temperatures for each material type
     materialTempMap: Record<string, number> = {
-        'PLA': 50,
-        'PETG': 55,
-        'ABS': 60,
-        'ASA': 60,
-        'TPU': 50,
-        'Nylon': 70,
-        'PC': 70,
-        'PVA': 50,
-        'HIPS': 55,
-        'Wood': 50,
-        'Carbon': 55,
-        'Other': 50,
+        'PLA': 210,
+        'PETG': 230,
+        'ABS': 250,
+        'ASA': 250,
+        'TPU': 220,
+        'Nylon': 260,
+        'PC': 270,
+        'PVA': 200,
+        'HIPS': 230,
+        'Wood': 200,
+        'Carbon': 230,
+        'Other': 210,
     }
 
     get showDialog() {
@@ -390,7 +390,7 @@ export default class AceGateMapDialog extends Mixins(BaseMixin, AceMixin) {
     applyMaterialProfile(profile: MaterialProfile) {
         // Apply material profile settings to current gate
         this.editMaterial = profile.name
-        this.editTemp = profile.dryerTemp
+        this.editTemp = profile.defaultTemp // Use print temp, not dryer temp
         this.tempManuallySet = false
 
         // Optionally apply a color suggestion if available

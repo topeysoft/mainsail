@@ -63,19 +63,23 @@ const PWAConfig: Partial<VitePWAOptions> = {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     plugins: [
         VitePWA(PWAConfig),
         buildVersion(),
         buildReleaseInfo(),
         vue(),
         version(),
-        checker({
-            typescript: {
-                root: path.resolve(__dirname),
-                buildMode: false,
-            },
-        }),
+        ...(command === 'serve'
+            ? [
+                checker({
+                    typescript: {
+                        root: path.resolve(__dirname),
+                        buildMode: false,
+                    },
+                }),
+            ]
+            : []),
         Components({
             dts: true, // enabled by default if `typescript` is installed
             resolvers: [VuetifyResolver()],
@@ -141,4 +145,4 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 8081,
     },
-})
+}))

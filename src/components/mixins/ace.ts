@@ -139,12 +139,14 @@ export default class AceMixin extends Vue {
 
     // Get a specific gate object with all its properties
     getAceGate(index: number): AceGate {
-        // Always use top-level arrays for user-configured metadata (material, color, temp)
-        // These are persisted configuration values
+        // Get user-configured values as defaults (these may contain RFID-merged data from backend)
         const material = this.aceGateMaterials[index] ?? ''
         const color = this.aceGateColors[index] ?? 'FFFFFF'
         const temp = this.aceGateTemps[index] ?? 230
         const spoolId = this.aceSpoolIds[index] ?? 0
+
+        // CRITICAL: Access aceGateFeedAssist getter first to establish reactive dependency
+        const feedAssist = this.aceGateFeedAssist[index] ?? false
 
         // Check if we have device-specific data for runtime status
         const devices = this.ace.devices
@@ -163,22 +165,44 @@ export default class AceMixin extends Vue {
                 if (slot) {
                     const gateState = slot.status ?? 'empty'
 
+                    // Prefer RFID data from slot if available and RFID is enabled
+                    let finalColor = color
+                    let finalMaterial = material
+
+                    const enableRfid = this.ace.enable_rfid ?? true
+                    if (enableRfid && slot) {
+                        // Use RFID material type if available
+                        if (slot.type && slot.type.trim() !== '') {
+                            finalMaterial = slot.type
+                        }
+
+                        // Use RFID color if available (non-black RGB array)
+                        if (slot.color && Array.isArray(slot.color)) {
+                            const [r, g, b] = slot.color
+                            if (r !== 0 || g !== 0 || b !== 0) {
+                                // Convert RGB array to hex string
+                                finalColor = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0').toUpperCase()
+                            }
+                        }
+                    }
+
                     return {
                         index,
                         status: gateState,
-                        color: color,
-                        material: material,
+                        color: finalColor,
+                        material: finalMaterial,
                         temp: temp,
                         spool_id: spoolId,
                         loaded: gateState === 'loaded' || gateState === 'active',
                         selected: index === this.aceSelectedGate,
-                        feed_assist: this.aceGateFeedAssist[index] ?? false,
+                        feed_assist: feedAssist,
                     }
                 }
             }
         }
 
         // Fallback to top-level arrays for backward compatibility
+        // Note: Top-level arrays already contain RFID-merged data from backend get_status()
         const gateState = this.aceActiveGateStates[index] ?? 'empty'
         return {
             index,
@@ -189,13 +213,13 @@ export default class AceMixin extends Vue {
             spool_id: spoolId,
             loaded: gateState === 'loaded' || gateState === 'active',
             selected: index === this.aceSelectedGate,
-            feed_assist: this.aceGateFeedAssist[index] ?? false,
+            feed_assist: feedAssist,
         }
     }
 
     // Get all gates as an array (dynamic based on num_gates)
     get aceGates(): AceGate[] {
-        const numGates = this.ace.num_gates ?? 4
+        const numGates = this.ace.total_gates ?? this.ace.num_gates ?? 4
 
         // CRITICAL: Access these getters directly to establish reactive dependencies
         // Without this, Vue won't know that aceGates depends on these arrays
@@ -226,7 +250,7 @@ export default class AceMixin extends Vue {
 
     // Get number of gates
     get aceNumGates(): number {
-        return this.ace.num_gates ?? 4
+        return this.ace.total_gates ?? this.ace.num_gates ?? 4
     }
 
     // Get gates for a specific device (helper for device-grouped UI)

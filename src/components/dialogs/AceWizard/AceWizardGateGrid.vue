@@ -39,7 +39,7 @@
                             hide-details
                             suffix="°C"
                             style="max-width: 100px"
-                            :label="$t('Panels.AcePanel.Temp')" />
+                            :label="$t('Panels.AcePanel.PrintTemp')" />
 
                         <v-btn small color="primary" @click="applyBulkMaterial">
                             <v-icon small left>{{ mdiCheckAll }}</v-icon>
@@ -139,7 +139,7 @@ export default class AceWizardGateGrid extends Vue {
 
     selectedGates: number[] = []
     bulkMaterial = 'PLA'
-    bulkTemp = 50
+    bulkTemp = 210
     bulkColor = 'FFFFFF'
 
     materialOptions = [
@@ -157,19 +157,20 @@ export default class AceWizardGateGrid extends Vue {
         'Other',
     ]
 
+    // Default print/extrusion temperatures for each material type
     materialTempMap: Record<string, number> = {
-        PLA: 50,
-        PETG: 55,
-        ABS: 60,
-        ASA: 60,
-        TPU: 50,
-        Nylon: 70,
-        PC: 70,
-        PVA: 50,
-        HIPS: 55,
-        Wood: 50,
-        Carbon: 55,
-        Other: 50,
+        PLA: 210,
+        PETG: 230,
+        ABS: 250,
+        ASA: 250,
+        TPU: 220,
+        Nylon: 260,
+        PC: 270,
+        PVA: 200,
+        HIPS: 230,
+        Wood: 200,
+        Carbon: 230,
+        Other: 210,
     }
 
     get selectAll() {
@@ -191,7 +192,7 @@ export default class AceWizardGateGrid extends Vue {
     @Watch('bulkMaterial')
     onBulkMaterialChange(newVal: string) {
         // Auto-update temp when material changes
-        this.bulkTemp = this.materialTempMap[newVal] || 50
+        this.bulkTemp = this.materialTempMap[newVal] || 210
     }
 
     getDeviceGateIndices(device: DeviceSetupConfig): number[] {
